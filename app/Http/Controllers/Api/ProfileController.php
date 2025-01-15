@@ -29,32 +29,29 @@ class ProfileController extends Controller
         ]);
     }
 
+    public function getUserInfo(Request $request)
+    {
+        $user = auth()->user();
+        return response()->json($user);
+    }
+
     public function updateProfile(Request $request)
     {
-        // Validasi input
         $validator = Validator::make($request->all(), [
             'name'      => 'required|string|max:255',
             'phonenum'  => 'nullable|string|max:15',
             'address'   => 'nullable|string|max:255',
         ]);
 
-        // Jika validasi gagal
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'errors'  => $validator->errors(),
             ], 400);
-        }
+        } 
 
-        // Ambil user yang sedang login
         $user = auth()->user();
 
-        // Update nama di tabel users
-        // $user->update([
-        //     'name' => $request->name,
-        // ]);
-
-        // Update atau buat profil di tabel profiles
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
             [

@@ -32,7 +32,7 @@ class Transactions extends Model
     // Relasi dengan model Rental
     public function rental()
     {
-        return $this->belongsTo(Rental::class, 'rental_id');
+        return $this->belongsTo(Rental::class, 'rental_id', 'id');
     }
 
     public function pickupBranch()

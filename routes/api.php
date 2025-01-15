@@ -8,7 +8,7 @@ use App\Http\Controllers\Api\BranchesController;
 use App\Http\Controllers\Api\RentalController;
 use App\Http\Controllers\Api\MotorController;
 use App\Http\Controllers\Api\TransactionController;
-
+use App\Http\Controllers\Api\BatteryStationController;
 
 /**
  * route "/register"
@@ -30,18 +30,18 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-
-
 Route::middleware('auth:api')->group(function () {
     Route::get('profile', [ProfileController::class, 'getUserProfile']);
     Route::post('profile/update', [ProfileController::class, 'updateProfile']);
+    Route::get('user-info', [ProfileController::class, 'getUserInfo']);
 });
 
 Route::middleware('auth:api')->group(function () {
     Route::post('/rental', [RentalController::class, 'store']);
     Route::get('/rental/show', [RentalController::class, 'show']);
-});
+    Route::post('rental/{rentalId}/finish', [RentalController::class, 'finishRental']);
 
+});
 
 Route::middleware('auth:api')->group(function () {
     Route::get('branches', [BranchesController::class, 'index']); // Fetch all branches
@@ -57,20 +57,14 @@ Route::middleware('auth:api')->group(function () {
     Route::get('transaction', [TransactionController::class, 'index']); // Ambil semua transaksi
     Route::get('transaction/{id}', [TransactionController::class, 'getTransactionSummary']); // Ambil detail transaksi
     Route::post('transaction', [TransactionController::class, 'createTransaction']); // Buat transaksi baru
-    Route::put('transaction/{id}/payment-status', [TransactionController::class, 'updatePaymentStatus']); // Update status pembayaran
+    Route::post('transaction/{id}/payment-status', [TransactionController::class, 'updatePaymentStatus']); // Update status pembayaran
+    Route::get('user/{userId}/transactions', [TransactionController::class, 'getUserTransactions']);
+    Route::post('transaction/{id}/rent-status', [TransactionController::class, 'updateRentStatus']);
 });
 
-// Route::middleware('auth:api')->group(function () {
-//     Route::post('/profile/complete', [RegisterController::class, 'completeProfile']);
-// });
-
-// Route::post('/profile/update-name', [ProfileController::class, 'updateName'])->middleware('auth:api');
-// Route::get('/user/profile', [ProfileController::class, 'getUserProfile'])->middleware('auth:api');
-
-// Route::middleware('auth:api')->group(function () {
-//     Route::get('/profile', [App\Http\Controllers\Api\ProfileController::class, 'getUserProfile'])->name('getUserProfile');
-//     Route::post('/profile/update', [App\Http\Controllers\Api\ProfileController::class, 'updateProfile']);
-// });
+Route::middleware('auth:api')->group(function () {
+    Route::get('battery-stations', [BatteryStationController::class, 'index']);
+});
 
 /**
  * route "/logout"

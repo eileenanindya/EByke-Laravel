@@ -73,20 +73,6 @@ class RentalController extends Controller
 
         Motor::where('id', $request->motor_id)->update(['status' => 'in-use']);
 
-        $transaction = Transactions::create([
-            'rental_id' => $rental->id,
-            'user_id' => $validated['user_id'],
-            'amount' => $totalCost,
-            'payment_method' => 'e-wallet', // Belum dipilih
-            'payment_status' => 'pending', // Belum dibayar
-            'payment_time' => null, // Belum ada
-            'start_date' => $validated['start_date'],
-            'end_date' => $validated['end_date'],
-            'pickup_branch_id' => $validated['pickup_branch_id'],
-        ]);
-        return response()->json($transaction, 201);
-
-        // Kembalikan respons jika rental berhasil dibuat
         return response()->json([
             'message' => 'Rental created successfully.',
             'rental' => $rental, // Rental yang baru dibuat
@@ -105,6 +91,25 @@ class RentalController extends Controller
             'rental' => $rental,
             'transaction' => $transaction,
         ]);
+    }
+
+    public function finishRental($rentalId)
+    {
+        // Cari rental berdasarkan ID
+        $rental = Rental::find($rentalId);
+
+        if (!$rental) {
+            return response()->json(['message' => 'Rental not found'], 404);
+        }
+
+        // Mengubah status rental menjadi 'completed'
+        $rental->status = 'completed';
+        $rental->save();
+
+        return response()->json([
+            'message' => 'Rental marked as completed successfully.',
+            'rental' => $rental
+        ], 200);
     }
 
 
@@ -137,98 +142,5 @@ class RentalController extends Controller
                 'longitude' => $rental->returnBranch->longitude,
             ],
         ]);
-    }
-
-    // Memperbarui rental berdasarkan ID
-    public function update(Request $request, $id)
-    {
-        $rental = Rental::find($id);
-
-        if (!$rental) {
-            return response()->json(['message' => 'Rental not found.'], 404);
-        }
-
-        $validated = $request->validate([
-            'motor_id' => 'nullable|exists:motors,id',
-            'pickup_branch_id' => 'nullable|exists:branches, branch_id',
-            'return_branch_id' => 'nullable|exists:branches,branch_id',
-            'start_time' => 'nullable|date',
-            'end_time' => 'nullable|date|after:start_time',
-        ]);
-
-        if (isset($validated['motor_id']) && $rental->motor_id !== $validated['motor_id']) {
-            $motor = Motor::find($validated['motor_id']);
-            if ($motor->status !== 'available') {
-                return response()->json(['message' => 'Motor is not available for rental.'], 400);
-            }
-            $rental->motor->update(['status' => 'available']);
-            $motor->update(['status' => 'in-use']);
-        }
-
-        $rental->update($validated);
-
-        return response()->json([
-            'message' => 'Rental updated successfully.',
-            'rental' => $rental,
-        ], 200);
-    }
-
-    // Menghapus rental berdasarkan ID
-    public function destroy($id)
-    {
-        $rental = Rental::find($id);
-
-        if (!$rental) {
-            return response()->json(['message' => 'Rental not found.'], 404);
-        }
-
-        $rental->motor->update(['status' => 'available']);
-
-        $rental->delete();
-
-        return response()->json(['message' => 'Rental deleted successfully.'], 200);
-    }
-
-    // Mengakhiri rental (mengembalikan motor)
-    public function completeRental(Request $request, $id)
-    {
-        $rental = Rental::find($id);
-
-        if (!$rental) {
-            return response()->json(['message' => 'Rental not found.'], 404);
-        }
-
-        if ($rental->status === 'completed') {
-            return response()->json(['message' => 'Rental is already completed.'], 400);
-        }
-
-        $validated = $request->validate([
-            'return_branch_id' => 'required|exists:branches,branch_id',
-            'end_time' => 'required|date|after:start_time',
-        ]);
-
-        // Hitung durasi dalam jam
-        $startTime = Carbon::parse($rental->start_time);
-        $endTime = Carbon::parse($validated['end_time']);
-        $duration = $startTime->diffInHours($endTime);
-
-        // Hitung total biaya (misalnya 10.000 per jam)
-        $costPerHour = 10000;
-        $totalCost = $duration * $costPerHour;
-
-        $rental->update([
-            'status' => 'completed',
-            'return_branch_id' => $validated['return_branch_id'],
-            'end_time' => $validated['end_time'],
-            'duration' => $duration,
-            'total_cost' => $totalCost,
-        ]);
-
-        $rental->motor->update(['status' => 'available']);
-
-        return response()->json([
-            'message' => 'Rental completed successfully.',
-            'rental' => $rental,
-        ], 200);
     }
 }
